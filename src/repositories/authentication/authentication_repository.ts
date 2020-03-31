@@ -78,13 +78,25 @@ export class AuthenticationRepository {
    * @returns {Promise<boolean>}
    */
   isLoggedIn(): Promise<boolean> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
         const token = AuthenticationRepository.getToken();
-        const isValid = token?.accessTokenExpiry
+        const isAccessTokenValid = token?.accessTokenExpiry
           ? token.accessTokenExpiry > new Date(Date.now())
           : false;
-        resolve(!!isValid);
+        const isRefreshTokenValid = token?.refreshTokenExpiry
+          ? token.refreshTokenExpiry > new Date(Date.now())
+          : false;
+        if (isAccessTokenValid) {
+          resolve(true);
+        } else if (!isAccessTokenValid && isRefreshTokenValid) {
+          await this.fetchToken(
+            token?.refreshToken ? token.refreshToken : '',
+            'refresh_token'
+          );
+          resolve(this.isLoggedIn());
+        }
+        resolve(false);
       } catch (e) {
         console.error(e);
         resolve(false);
@@ -92,14 +104,23 @@ export class AuthenticationRepository {
     });
   }
 
-  async fetchToken(code: string) {
+  async fetchToken(code: string, grantType: string) {
     const tokenUrl = `${this.config.authBaseUrl}/token`;
-    const requestParams = {
-      code,
-      grant_type: 'authorization_code',
-      client_id: this.config.clientId,
-      redirect_uri: `${this.config.baseUrl}/auth_callback`,
-    };
+    let requestParams = {};
+    if (grantType === 'authorization_code') {
+      requestParams = {
+        code,
+        grant_type: 'authorization_code',
+        client_id: this.config.clientId,
+        redirect_uri: `${this.config.baseUrl}/auth_callback`,
+      };
+    } else if (grantType === 'refresh_token') {
+      requestParams = {
+        grant_type: 'refresh_token',
+        refresh_token: code,
+        client_id: this.config.clientId,
+      };
+    }
     const { data } = await Axios.post(tokenUrl, qs.stringify(requestParams), {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
