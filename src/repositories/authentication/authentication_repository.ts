@@ -69,7 +69,7 @@ export class AuthenticationRepository {
    * @returns {Promise<boolean>}
    */
   isLoggedIn(): Promise<boolean> {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       try {
         const token = AuthenticationRepository.getToken();
         const isAccessTokenValid = token?.accessTokenExpiry
@@ -81,11 +81,16 @@ export class AuthenticationRepository {
         if (isAccessTokenValid) {
           resolve(true);
         } else if (!isAccessTokenValid && isRefreshTokenValid) {
-          await this.fetchToken(
+          this.fetchToken(
             token?.refreshToken ? token.refreshToken : '',
             'refresh_token'
-          );
-          resolve(this.isLoggedIn());
+          ).then(token => {
+            if (token && token.accessTokenExpiry > new Date(Date.now())) {
+              resolve(true);
+            } else {
+              resolve(false);
+            }
+          });
         }
         resolve(false);
       } catch (e) {
