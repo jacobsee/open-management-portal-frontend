@@ -73,10 +73,10 @@ export class AuthenticationRepository {
       try {
         const token = AuthenticationRepository.getToken();
         const isAccessTokenValid = token?.accessTokenExpiry
-          ? token.accessTokenExpiry > new Date(Date.now())
+          ? token.accessTokenExpiry.getTime() > new Date(Date.now()).getTime()
           : false;
         const isRefreshTokenValid = token?.refreshTokenExpiry
-          ? token.refreshTokenExpiry > new Date(Date.now())
+          ? token.refreshTokenExpiry.getTime() > new Date(Date.now()).getTime()
           : false;
         if (isAccessTokenValid) {
           console.info('Access token is valid - proceeding');
