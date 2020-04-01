@@ -79,20 +79,21 @@ export class AuthenticationRepository {
           ? token.refreshTokenExpiry > new Date(Date.now())
           : false;
         if (isAccessTokenValid) {
+          console.info('Access token is valid - proceeding');
           resolve(true);
         } else if (!isAccessTokenValid && isRefreshTokenValid) {
+          console.info('Fetching new access token using refresh token');
           this.fetchToken(
             token?.refreshToken ? token.refreshToken : '',
             'refresh_token'
           ).then(token => {
-            if (token && token.accessTokenExpiry > new Date(Date.now())) {
-              resolve(true);
-            } else {
-              resolve(false);
-            }
+            console.info('New token: ', token);
+            resolve(token && token.accessTokenExpiry > new Date(Date.now()));
           });
+        } else {
+          console.info('Nothing is valid!');
+          resolve(false);
         }
-        resolve(false);
       } catch (e) {
         console.error(e);
         resolve(false);
