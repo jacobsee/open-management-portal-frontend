@@ -69,6 +69,7 @@ export class AuthenticationRepository {
    * @returns {Promise<boolean>}
    */
   isLoggedIn(): Promise<boolean> {
+    console.log('are we logged in?')
     return new Promise((resolve, reject) => {
       try {
         const token = AuthenticationRepository.getToken();
@@ -79,19 +80,22 @@ export class AuthenticationRepository {
           ? token.refreshTokenExpiry.getTime() > new Date(Date.now()).getTime()
           : false;
         if (isAccessTokenValid) {
-          console.info('Access token is valid - proceeding');
+          console.log('yes')
+          // Access token is valid! Proceed as normal
           resolve(true);
         } else if (!isAccessTokenValid && isRefreshTokenValid) {
-          console.info('Fetching new access token using refresh token');
+          console.log('refreshing')
+          // Fetch new access token using refresh token
           this.fetchToken(
             token?.refreshToken ? token.refreshToken : '',
             'refresh_token'
           ).then(token => {
-            console.info('New token: ', token);
+            console.log('refreshed!')
             resolve(token && token.accessTokenExpiry > new Date(Date.now()));
           });
         } else {
-          console.info('Nothing is valid!');
+          console.log('no!')
+          // Nothing is valid!
           resolve(false);
         }
       } catch (e) {
